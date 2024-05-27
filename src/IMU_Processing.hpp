@@ -287,6 +287,7 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf<state_ikf
       //否则，dt 为两个IMU数据点之间的时间间隔
       dt = tail->header.stamp.toSec() - head->header.stamp.toSec();
     }
+    //向前传播***********************
     //设置滤波器输入 in
     in.acc = acc_avr;
     in.gyro = angvel_avr;
@@ -295,13 +296,12 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf<state_ikf
     Q.block<3, 3>(3, 3).diagonal() = cov_acc;
     Q.block<3, 3>(6, 6).diagonal() = cov_bias_gyr;
     Q.block<3, 3>(9, 9).diagonal() = cov_bias_acc;
-    //调用 kf_state.predict 函数，使用 dt 和 Q 进行滤波器状态预测。
+    //进行状态预测
     kf_state.predict(dt, Q, in);
-
-    /* save the poses at each IMU measurements */
-    //保存每个IMU测量时的位姿
-    //前向传播
-    imu_state = kf_state.get_x();
+	//保存每个IMU测量时的位姿
+	imu_state = kf_state.get_x();
+	//**********************************************
+    
     //计算当前IMU状态下的角速度和加速度，减去滤波器估计的偏置
     angvel_last = angvel_avr - imu_state.bg;
     acc_s_last  = imu_state.rot * (acc_avr - imu_state.ba);
@@ -309,18 +309,19 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf<state_ikf
     {
       acc_s_last[i] += imu_state.grav[i];
     }
+    //保存当前IMU状态
     double &&offs_t = tail->header.stamp.toSec() - pcl_beg_time;
     //将当前IMU状态保存到 IMUpose 列表中，包括时间偏移量、加速度、角速度、速度、位置和旋转矩阵
     IMUpose.push_back(set_pose6d(offs_t, acc_s_last, angvel_last, imu_state.vel, imu_state.pos, imu_state.rot.toRotationMatrix()));
   }
 
   /*** calculated the pos and attitude prediction at the frame-end ***/
-  //更新滤波器状态并保存每个IMU数据点的位姿
+  //计算时间步长并进行状态预测
   double note = pcl_end_time > imu_end_time ? 1.0 : -1.0;
   dt = note * (pcl_end_time - imu_end_time);
   //向后传播
   kf_state.predict(dt, Q, in);
-  
+  //更新IMU状态
   imu_state = kf_state.get_x();
   last_imu_ = meas.imu.back();
   last_lidar_end_time_ = pcl_end_time;

@@ -484,6 +484,7 @@ void map_incremental()
 
 PointCloudXYZI::Ptr pcl_wait_pub(new PointCloudXYZI(500000, 1));
 PointCloudXYZI::Ptr pcl_wait_save(new PointCloudXYZI());
+//发布在世界坐标系下的点云数据
 void publish_frame_world(const ros::Publisher & pubLaserCloudFull)
 {
     if(scan_pub_en)
@@ -537,7 +538,7 @@ void publish_frame_world(const ros::Publisher & pubLaserCloudFull)
         }
     }
 }
-
+//发布在IMU机体坐标系下的点云数据
 void publish_frame_body(const ros::Publisher & pubLaserCloudFull_body)
 {
     int size = feats_undistort->points.size();
@@ -556,7 +557,7 @@ void publish_frame_body(const ros::Publisher & pubLaserCloudFull_body)
     pubLaserCloudFull_body.publish(laserCloudmsg);
     publish_count -= PUBFRAME_PERIOD;
 }
-
+//发布经过处理的特征点云数据
 void publish_effect_world(const ros::Publisher & pubLaserCloudEffect)
 {
     PointCloudXYZI::Ptr laserCloudWorld( \
@@ -572,7 +573,7 @@ void publish_effect_world(const ros::Publisher & pubLaserCloudEffect)
     laserCloudFullRes3.header.frame_id = "camera_init";
     pubLaserCloudEffect.publish(laserCloudFullRes3);
 }
-
+//发布从地图中提取的特征点云数据
 void publish_map(const ros::Publisher & pubLaserCloudMap)
 {
     sensor_msgs::PointCloud2 laserCloudMap;
